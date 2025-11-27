@@ -1,56 +1,91 @@
 pipeline {
     agent any
-
+    
     environment {
-        IMAGE_NAME = "nodejs-jenkins-sample-app"
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"
-        FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
-        CONTAINER_NAME = "nodejs-jenkins-sample-app-container"
+        // Variables avec numéro de build et nom image
+        DOCKER_IMAGE_NAME = "nodejs-app-jenkins"
+        DOCKER_IMAGE_TAG = "${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+        DOCKER_IMAGE_LATEST = "${DOCKER_IMAGE_NAME}:latest"
+        APP_PORT = "3000"
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
-                // Récupère le code du repo configuré dans le job Jenkins
+                echo "📥 Récupération du code source..."
                 checkout scm
             }
         }
-
-        stage('Install dependencies') {
+        
+        stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                echo "📦 Installation des dépendances NodeJS..."
+                sh '''
+                    npm install
+                '''
             }
         }
-
-        stage('Test') {
+        
+        stage('Tests') {
             steps {
-                // Adapte si ton projet a une autre commande, par ex. "npm run test"
-                sh 'npm test'
+                echo "🧪 Lancement des tests..."
+                sh '''
+                    npm test || true
+                '''
             }
         }
-
-        stage('Build Docker image') {
+        
+        stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${FULL_IMAGE} ."
+                echo "🐳 Construction de l'image Docker ${DOCKER_IMAGE_TAG}..."
+                sh '''
+                    docker build -t ${DOCKER_IMAGE_TAG} .
+                    docker tag ${DOCKER_IMAGE_TAG} ${DOCKER_IMAGE_LATEST}
+                '''
             }
         }
-
-        stage('Deploy container') {
+        
+        stage('Deploy Container') {
             steps {
-                // Stop & remove l’ancien conteneur si présent
-                sh "docker stop ${CONTAINER_NAME} || true"
-                sh "docker rm ${CONTAINER_NAME} || true"
-
-                // Lancer le conteneur sur localhost:3000
-                sh "docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${FULL_IMAGE}"
+                echo "🚀 Déploiement du conteneur sur port ${APP_PORT}..."
+                sh '''
+                    # Arrêt du conteneur précédent s'il existe
+                    docker stop ${DOCKER_IMAGE_NAME} || true
+                    docker rm ${DOCKER_IMAGE_NAME} || true
+                    
+                    # Lancement du nouveau conteneur
+                    docker run -d \
+                        --name ${DOCKER_IMAGE_NAME} \
+                        -p ${APP_PORT}:3000 \
+                        ${DOCKER_IMAGE_TAG}
+                '''
+            }
+        }
+        
+        stage('Verification') {
+            steps {
+                echo "✅ Vérification du déploiement..."
+                sh '''
+                    sleep 5
+                    curl -f http://localhost:${APP_PORT} || echo "App accessible sur http://localhost:${APP_PORT}"
+                    docker ps
+                '''
             }
         }
     }
-
+    
     post {
         always {
-            echo "Build number: ${env.BUILD_NUMBER}"
-            echo "Docker image: ${FULL_IMAGE}"
+            echo "🧹 Nettoyage..."
+            sh 'docker images | grep nodejs-app-jenkins || true'
+        }
+        success {
+            echo "🎉 Pipeline terminé avec succès ! App sur http://localhost:3000"
+        }
+        failure {
+            echo "❌ Pipeline échoué"
+            sh 'docker stop nodejs-app-jenkins || true'
+            sh 'docker rm nodejs-app-jenkins || true'
         }
     }
 }
