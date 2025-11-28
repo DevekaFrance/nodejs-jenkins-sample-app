@@ -47,14 +47,14 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+                stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    // Laisse continuer même si le Quality Gate n'est pas OK, tu peux mettre true plus tard
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: false
                 }
             }
         }
+
 
         stage('Tests') {
             steps {
