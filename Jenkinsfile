@@ -30,15 +30,7 @@ pipeline {
             }
         }
         
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
-                }
-            }
-        }
-        
-        stage('Deploy') {
+        stage('Stop Previous Container') {
             steps {
                 script {
                     // Arrêter l'ancien conteneur s'il existe
@@ -47,11 +39,25 @@ pipeline {
                     sh 'sudo docker ps -a -q -f "name=${DOCKER_IMAGE}" | grep -q . && docker rm ${DOCKER_IMAGE} || true'
                     // Supprimer l'ancienne image Docker si elle existe
                     sh 'sudo docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
-                    // Démarrer un nouveau conteneur avec la nouvelle image
-                    sh 'sudo docker run -d --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${DOCKER_TAG}'
                 }
             }
         }
+
+	stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                }
+            }
+	}
+
+	stage('Deploy') {
+	    steps {
+		script {
+		    // Démarrer un nouveau conteneur avec la nouvelle image
+                    sh 'sudo docker run -d --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${DOCKER_TAG}'
+		}
+	}		    
     }
     
     post {
