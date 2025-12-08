@@ -57,6 +57,7 @@ pipeline {
 		    // Démarrer un nouveau conteneur avec la nouvelle image
                     sh 'sudo docker run -d --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${DOCKER_TAG}'
 		}
+	    }
 	}		    
     }
     
