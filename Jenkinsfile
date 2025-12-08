@@ -9,6 +9,7 @@ pipeline {
     stages {
         stage('Checkout') {
             // TODO: Récupérer le code source
+	    git clone https://github.com/Lun0xxx/nodejs-jenkins-sample-app
         }
         
         stage('Install Dependencies') {
