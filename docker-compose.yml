@@ -1,0 +1,11 @@
+# Uniquement pour des tests en local
+
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BUILD_NUMBER=${BUILD_NUMBER:-local}
