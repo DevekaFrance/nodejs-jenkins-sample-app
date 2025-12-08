@@ -8,30 +8,61 @@ pipeline {
     
     stages {
         stage('Checkout') {
-            // TODO: Récupérer le code source
-	    git clone https://github.com/Lun0xxx/nodejs-jenkins-sample-app
+            steps {
+                // Récupérer la branche Docker du dépôt
+                git branch: 'Docker', url: 'https://github.com/Lun0xxx/nodejs-jenkins-sample-app.git'
+            }
         }
         
         stage('Install Dependencies') {
-            // TODO: Installer les dépendances
+            steps {
+                script {
+                    sh 'npm install'
+                }
+            }
         }
         
         stage('Run Tests') {
-            // TODO: Lancer les tests
+            steps {
+                script {
+                    sh 'npm test'
+                }
+            }
         }
         
         stage('Build Docker Image') {
-            // TODO: Construire l'image Docker
+            steps {
+                script {
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                }
+            }
         }
         
         stage('Deploy') {
-            // TODO: Déployer le conteneur
-            // Arrêter l'ancien conteneur s'il existe 
-            // Démarrer le nouveau conteneur avec la nouvelle version
+            steps {
+                script {
+                    // Arrêter l'ancien conteneur s'il existe
+                    sh 'docker ps -q -f "name=${DOCKER_IMAGE}" | grep -q . && docker stop ${DOCKER_IMAGE} || true'
+                    // Supprimer l'ancien conteneur s'il existe
+                    sh 'docker ps -a -q -f "name=${DOCKER_IMAGE}" | grep -q . && docker rm ${DOCKER_IMAGE} || true'
+                    // Supprimer l'ancienne image Docker si elle existe
+                    sh 'docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
+                    // Démarrer un nouveau conteneur avec la nouvelle image
+                    sh 'docker run -d --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${DOCKER_TAG}'
+                }
+            }
         }
     }
     
     post {
-        // TODO: Partie bonus
+        always {
+            echo 'Pipeline terminé, nettoyage des ressources.'
+        }
+        success {
+            echo 'Le pipeline s\'est terminé avec succès.'
+        }
+        failure {
+            echo 'Le pipeline a échoué.'
+        }
     }
 }
