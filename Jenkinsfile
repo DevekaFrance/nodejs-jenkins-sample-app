@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Récupérer la branche Docker du dépôt
-                git branch: 'Docker', url: 'https://github.com/Lun0xxx/nodejs-jenkins-sample-app.git'
+                git branch: 'docker', url: 'https://github.com/Lun0xxx/nodejs-jenkins-sample-app.git'
             }
         }
         
