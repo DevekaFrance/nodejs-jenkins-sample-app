@@ -26,7 +26,7 @@ pipeline {
         }
         
         stage('Build Docker Image') {
-            stemps {
+            steps {
                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
                 sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
             }
