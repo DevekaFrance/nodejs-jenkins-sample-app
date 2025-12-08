@@ -8,29 +8,67 @@ pipeline {
     
     stages {
         stage('Checkout') {
-            // TODO: Récupérer le code source
+            steps {
+                // Récupère le code depuis la branche docker du dépôt
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'docker']],
+                    userRemoteConfigs: [[url: 'https://github.com/DevekaFrance/nodejs-jenkins-sampleapp.git']]
+                ])
+            }
         }
         
         stage('Install Dependencies') {
-            // TODO: Installer les dépendances
+            steps {
+                echo 'Installation des dépendances Node.js...'
+                sh 'npm install'
+            }
         }
         
         stage('Run Tests') {
-            // TODO: Lancer les tests
+            steps {
+                echo 'Lancement des tests...'
+                sh 'npm test'
+            }
         }
         
         stage('Build Docker Image') {
-            // TODO: Construire l'image Docker
+            steps {
+                script {
+                    echo "Construction de l'image Docker: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    // Construit l'image à partir du Dockerfile du dépôt
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                }
+            }
         }
         
         stage('Deploy') {
-            // TODO: Déployer le conteneur
-            // Arrêter l'ancien conteneur s'il existe 
-            // Démarrer le nouveau conteneur avec la nouvelle version
+            steps {
+                script {
+                    echo 'Déploiement du conteneur...'
+                    
+                    // Arrête et supprime l'ancien conteneur s'il existe
+                    sh '''
+                        docker stop jenkins-app || true
+                        docker rm jenkins-app || true
+                    '''
+                    
+                    // Lance le nouveau conteneur sur le port 3000
+                    sh "docker run -d --name jenkins-app -p 3000:3000 ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                }
+            }
         }
     }
     
     post {
-        // TODO: Partie bonus
+        always {
+            echo "Pipeline terminé (build #${BUILD_NUMBER})"
+        }
+        success {
+            echo "✅ Déploiement réussi sur http://localhost:3000"
+        }
+        failure {
+            echo "❌ Échec du pipeline"
+        }
     }
 }
